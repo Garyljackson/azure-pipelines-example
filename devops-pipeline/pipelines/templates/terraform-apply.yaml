@@ -1,0 +1,17 @@
+parameters:
+  - name: "workingDirectory"
+    type: string
+  - name: "commandOptions"
+    type: string
+  - name: "environmentServiceNameAzureRM"
+    type: string
+
+steps:
+  - task: TerraformTaskV1@0
+    displayName: "Terraform Apply"
+    inputs:
+      provider: "azurerm"
+      command: "apply"
+      workingDirectory: "${{ parameters.workingDirectory }}"
+      commandOptions: "${{ parameters.commandOptions }}"
+      environmentServiceNameAzureRM: "${{ parameters.environmentServiceNameAzureRM }}"

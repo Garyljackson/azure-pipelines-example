@@ -1,0 +1,99 @@
+trigger:
+  - main
+
+resources:
+  - repo: self
+
+variables:
+  azureSubscription: 'Pay-As-You-Go (d272fc86-d2b1-4a0f-9336-2a337b55c349)'
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: 'f03df4ac-c8e6-47c9-9540-0538489faba8'
+  imageRepository: 'cx-affinity-kiosk-um'
+  containerRegistry: 'connectdevelop.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: |
+    $(Build.BuildNumber)
+    latest
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+stages:
+  - stage: Build
+    displayName: Build and push
+    jobs:
+      - job: Build
+        displayName: Build
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+          - task: Docker@2
+            displayName: Build Docker Image and Push to Repository
+            inputs:
+              command: buildAndPush
+              repository: $(imageRepository)
+              dockerfile: $(dockerfilePath)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: 'devops-pipeline'
+              ArtifactName: 'devops-pipeline'
+              publishLocation: 'Container'
+
+  - stage: DeployDev
+    displayName: 'Deploy To Dev'
+    variables:
+      - group: 'cx-affinity-kiosk-dev'
+    jobs:
+      - deployment:
+        pool:
+          vmImage: $(vmImageName)
+        environment: 'Dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-install.yaml
+                - template: templates/terraform-init.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    backendServiceArm: '$(azureSubscription)'
+                    backendAzureRmResourceGroupName: 'cx-terraform-shared'
+                    backendAzureRmStorageAccountName: 'canxgnsharedcxterraformshared'
+                    backendAzureRmContainerName: 'terraform-state'
+                    backendAzureRmKey: 'ca-affinity-kiosk-state/$(EnvironmentName).terraform.tfstate'
+
+                - template: templates/terraform-plan.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    commandOptions: '-var="environment_name=$(EnvironmentName)"'
+                    environmentServiceNameAzureRM: '$(azureSubscription)'
+
+                - template: templates/terraform-apply.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    commandOptions: '-var="environment_name=$(EnvironmentName)"'
+                    environmentServiceNameAzureRM: '$(azureSubscription)'
+                - task: AzureRmWebAppDeployment@4
+                  displayName: 'Deploy Docker Image'
+                  inputs:
+                    ConnectionType: 'AzureRM'
+                    azureSubscription: '$(azureSubscription)'
+                    appType: 'webAppContainer'
+                    WebAppName: 'cx-affinity-kiosk-app-$(EnvironmentName)'
+                    deployToSlotOrASE: true
+                    ResourceGroupName: 'cx-affinity-kiosk-$(EnvironmentName)'
+                    SlotName: 'staging'
+                    DockerNamespace: '$(containerRegistry)'
+                    DockerRepository: '$(imageRepository)'
+                    DockerImageTag: '$(Build.BuildNumber)'
+                - task: AzureAppServiceManage@0
+                  displayName: 'Swap Staging Slot into Production'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    Action: 'Swap Slots'
+                    WebAppName: 'cx-affinity-kiosk-app-$(EnvironmentName)'
+                    ResourceGroupName: 'cx-affinity-kiosk-$(EnvironmentName)'
+                    SourceSlot: 'staging'
