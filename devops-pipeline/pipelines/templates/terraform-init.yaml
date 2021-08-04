@@ -1,26 +1,26 @@
 parameters:
-  - name: "workingDirectory"
+  - name: 'workingDirectory'
     type: string
-  - name: "backendServiceArm"
+  - name: 'backendServiceArm'
     type: string
-  - name: "backendAzureRmResourceGroupName"
+  - name: 'backendAzureRmResourceGroupName'
     type: string
-  - name: "backendAzureRmStorageAccountName"
+  - name: 'backendAzureRmStorageAccountName'
     type: string
-  - name: "backendAzureRmContainerName"
+  - name: 'backendAzureRmContainerName'
     type: string
-  - name: "backendAzureRmKey"
+  - name: 'backendAzureRmKey'
     type: string
 
 steps:
-  - task: TerraformTaskV1@0
-    displayName: "Terraform Init"
+  - task: TerraformTaskV2@2
+    displayName: 'Terraform Init'
     inputs:
-      provider: "azurerm"
-      command: "init"
-      workingDirectory: "${{ parameters.workingDirectory }}"
-      backendServiceArm: "${{ parameters.backendServiceArm }}"
-      backendAzureRmResourceGroupName: "${{ parameters.backendAzureRmResourceGroupName }}"
-      backendAzureRmStorageAccountName: "${{ parameters.backendAzureRmStorageAccountName }}"
-      backendAzureRmContainerName: "${{ parameters.backendAzureRmContainerName }}"
-      backendAzureRmKey: "${{ parameters.backendAzureRmKey }}"
+      provider: 'azurerm'
+      command: 'init'
+      workingDirectory: '${{ parameters.workingDirectory }}'
+      backendServiceArm: '${{ parameters.backendServiceArm }}'
+      backendAzureRmResourceGroupName: '${{ parameters.backendAzureRmResourceGroupName }}'
+      backendAzureRmStorageAccountName: '${{ parameters.backendAzureRmStorageAccountName }}'
+      backendAzureRmContainerName: '${{ parameters.backendAzureRmContainerName }}'
+      backendAzureRmKey: '${{ parameters.backendAzureRmKey }}'

@@ -22,6 +22,10 @@ resource "azurerm_app_service" "main" {
   identity {
     type = "SystemAssigned"
   }
+
+  lifecycle {
+    ignore_changes = [app_settings, site_config]
+  }
 }
 
 resource "azurerm_app_service_custom_hostname_binding" "main" {
@@ -70,6 +74,9 @@ resource "azurerm_app_service_slot" "main" {
 
   identity {
     type = "SystemAssigned"
+  }
 
+  lifecycle {
+    ignore_changes = [app_settings, site_config]
   }
 }

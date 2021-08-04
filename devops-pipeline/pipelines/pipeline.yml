@@ -61,9 +61,121 @@ stages:
                     workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
                     backendServiceArm: '$(azureSubscription)'
                     backendAzureRmResourceGroupName: 'cx-terraform-shared'
-                    backendAzureRmStorageAccountName: 'canxgnsharedcxterraformshared'
+                    backendAzureRmStorageAccountName: 'cxterraformshared'
                     backendAzureRmContainerName: 'terraform-state'
-                    backendAzureRmKey: 'ca-affinity-kiosk-state/$(EnvironmentName).terraform.tfstate'
+                    backendAzureRmKey: 'cx-affinity-kiosk-state/$(EnvironmentName).terraform.tfstate'
+
+                - template: templates/terraform-plan.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    commandOptions: '-var="environment_name=$(EnvironmentName)"'
+                    environmentServiceNameAzureRM: '$(azureSubscription)'
+
+                - template: templates/terraform-apply.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    commandOptions: '-var="environment_name=$(EnvironmentName)"'
+                    environmentServiceNameAzureRM: '$(azureSubscription)'
+                - task: AzureRmWebAppDeployment@4
+                  displayName: 'Deploy Docker Image'
+                  inputs:
+                    ConnectionType: 'AzureRM'
+                    azureSubscription: '$(azureSubscription)'
+                    appType: 'webAppContainer'
+                    WebAppName: 'cx-affinity-kiosk-app-$(EnvironmentName)'
+                    deployToSlotOrASE: true
+                    ResourceGroupName: 'cx-affinity-kiosk-$(EnvironmentName)'
+                    SlotName: 'staging'
+                    DockerNamespace: '$(containerRegistry)'
+                    DockerRepository: '$(imageRepository)'
+                    DockerImageTag: '$(Build.BuildNumber)'
+                - task: AzureAppServiceManage@0
+                  displayName: 'Swap Staging Slot into Production'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    Action: 'Swap Slots'
+                    WebAppName: 'cx-affinity-kiosk-app-$(EnvironmentName)'
+                    ResourceGroupName: 'cx-affinity-kiosk-$(EnvironmentName)'
+                    SourceSlot: 'staging'
+
+  - stage: DeployUat
+    displayName: 'Deploy To Uat'
+    variables:
+      - group: 'cx-affinity-kiosk-uat'
+    jobs:
+      - deployment:
+        pool:
+          vmImage: $(vmImageName)
+        environment: 'uat'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-install.yaml
+                - template: templates/terraform-init.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    backendServiceArm: '$(azureSubscription)'
+                    backendAzureRmResourceGroupName: 'cx-terraform-shared'
+                    backendAzureRmStorageAccountName: 'cxterraformshared'
+                    backendAzureRmContainerName: 'terraform-state'
+                    backendAzureRmKey: 'cx-affinity-kiosk-state/$(EnvironmentName).terraform.tfstate'
+
+                - template: templates/terraform-plan.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    commandOptions: '-var="environment_name=$(EnvironmentName)"'
+                    environmentServiceNameAzureRM: '$(azureSubscription)'
+
+                - template: templates/terraform-apply.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    commandOptions: '-var="environment_name=$(EnvironmentName)"'
+                    environmentServiceNameAzureRM: '$(azureSubscription)'
+                - task: AzureRmWebAppDeployment@4
+                  displayName: 'Deploy Docker Image'
+                  inputs:
+                    ConnectionType: 'AzureRM'
+                    azureSubscription: '$(azureSubscription)'
+                    appType: 'webAppContainer'
+                    WebAppName: 'cx-affinity-kiosk-app-$(EnvironmentName)'
+                    deployToSlotOrASE: true
+                    ResourceGroupName: 'cx-affinity-kiosk-$(EnvironmentName)'
+                    SlotName: 'staging'
+                    DockerNamespace: '$(containerRegistry)'
+                    DockerRepository: '$(imageRepository)'
+                    DockerImageTag: '$(Build.BuildNumber)'
+                - task: AzureAppServiceManage@0
+                  displayName: 'Swap Staging Slot into Production'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    Action: 'Swap Slots'
+                    WebAppName: 'cx-affinity-kiosk-app-$(EnvironmentName)'
+                    ResourceGroupName: 'cx-affinity-kiosk-$(EnvironmentName)'
+                    SourceSlot: 'staging'
+
+  - stage: DeployProd
+    displayName: 'Deploy To Prod'
+    variables:
+      - group: 'cx-affinity-kiosk-prod'
+    jobs:
+      - deployment:
+        pool:
+          vmImage: $(vmImageName)
+        environment: 'Prod'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-install.yaml
+                - template: templates/terraform-init.yaml
+                  parameters:
+                    workingDirectory: '$(Pipeline.Workspace)/devops-pipeline/terraform'
+                    backendServiceArm: '$(azureSubscription)'
+                    backendAzureRmResourceGroupName: 'cx-terraform-shared'
+                    backendAzureRmStorageAccountName: 'cxterraformshared'
+                    backendAzureRmContainerName: 'terraform-state'
+                    backendAzureRmKey: 'cx-affinity-kiosk-state/$(EnvironmentName).terraform.tfstate'
 
                 - template: templates/terraform-plan.yaml
                   parameters:

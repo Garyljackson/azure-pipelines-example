@@ -1,17 +1,17 @@
 parameters:
-  - name: "workingDirectory"
+  - name: 'workingDirectory'
     type: string
-  - name: "commandOptions"
+  - name: 'commandOptions'
     type: string
-  - name: "environmentServiceNameAzureRM"
+  - name: 'environmentServiceNameAzureRM'
     type: string
 
 steps:
-  - task: TerraformTaskV1@0
-    displayName: "Terraform Plan"
+  - task: TerraformTaskV2@2
+    displayName: 'Terraform Plan'
     inputs:
-      provider: "azurerm"
-      command: "plan"
-      workingDirectory: "${{ parameters.workingDirectory }}"
-      commandOptions: "${{ parameters.commandOptions }}"
-      environmentServiceNameAzureRM: "${{ parameters.environmentServiceNameAzureRM }}"
+      provider: 'azurerm'
+      command: 'plan'
+      workingDirectory: '${{ parameters.workingDirectory }}'
+      commandOptions: '${{ parameters.commandOptions }}'
+      environmentServiceNameAzureRM: '${{ parameters.environmentServiceNameAzureRM }}'
